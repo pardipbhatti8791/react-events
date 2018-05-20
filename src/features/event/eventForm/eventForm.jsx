@@ -1,41 +1,28 @@
 import React, { Component } from "react";
 import { Segment, Form, Button } from "semantic-ui-react";
-
-const emptyEvent = {
-  title: "",
-  date: "",
-  city: "",
-  venue: "",
-  hostedBy: ""
-};
+import { connect } from "react-redux";
+import * as actions from '../eventActions';
+import gpId from 'cuid';
 
 class EventForm extends Component {
   state = {
-    event: emptyEvent
+    event: Object.assign({}, this.props.event)
   };
-
-  componentDidMount() {
-      if (this.props.selectedEvent !== null) {
-        this.setState({
-            event: this.props.selectedEvent
-        })
-      }
-  }
-
-  componentWillReceiveProps(nextProps) {
-    if (this.props.selectedEvent !== nextProps.selectedEvent) {
-        this.setState({
-            event: nextProps.selectedEvent || emptyEvent
-        })
-      }
-  }
 
   onFormSubmit = e => {
     e.preventDefault();
+
     if (this.state.event.id) {
-        this.props.updateEvent(this.state.event)
+      this.props.dispatch(actions.updateEvent(this.state.event));
+      this.props.history.goBack();
     } else {
-        this.props.createEvent(this.state.event);
+      const eventData = {
+        ...this.state.event,
+        id: gpId(),
+        hostPhotoURL: '/assets/user.png'
+      }
+      this.props.dispatch(actions.createEvent(eventData));
+      this.props.history.push('/events');
     }
   };
 
@@ -49,6 +36,7 @@ class EventForm extends Component {
   };
 
   render() {
+    const { event } = this.state;
     return (
       <Segment>
         <Form onSubmit={this.onFormSubmit}>
@@ -56,7 +44,7 @@ class EventForm extends Component {
             <label>Event Title</label>
             <input
               name="title"
-              value={this.state.event.title}
+              value={event.title}
               onChange={this.onInputChange}
               placeholder="First Name"
             />
@@ -65,7 +53,7 @@ class EventForm extends Component {
             <label>Event Date</label>
             <input
               name="date"
-              value={this.state.event.date}
+              value={event.date}
               onChange={this.onInputChange}
               type="date"
               placeholder="Event Date"
@@ -75,7 +63,7 @@ class EventForm extends Component {
             <label>City</label>
             <input
               name="city"
-              value={this.state.event.city}
+              value={event.city}
               onChange={this.onInputChange}
               placeholder="City event is taking place"
             />
@@ -84,7 +72,7 @@ class EventForm extends Component {
             <label>Venue</label>
             <input
               name="venue"
-              value={this.state.event.venue}
+              value={event.venue}
               onChange={this.onInputChange}
               placeholder="Enter the Venue of the event"
             />
@@ -93,15 +81,15 @@ class EventForm extends Component {
             <label>Hosted By</label>
             <input
               name="hostedBy"
-              value={this.state.event.hostedBy}
+              value={event.hostedBy}
               onChange={this.onInputChange}
               placeholder="Enter the name of person hosting"
             />
           </Form.Field>
           <Button positive type="submit">
-            Submit
+            {this.state.event.id ? 'Update' : 'Save'}
           </Button>
-          <Button onClick={() => this.props.handleCancel()} type="button">
+          <Button onClick={this.props.history.goBack} type="button">
             Cancel
           </Button>
         </Form>
@@ -110,4 +98,25 @@ class EventForm extends Component {
   }
 }
 
-export default EventForm;
+const mapState = (state, ownProps) => {
+  const eventId = ownProps.match.params.id;
+
+  let event = {
+    title: "",
+    date: "",
+    city: "",
+    venue: "",
+    hostedBy: ""
+  };
+
+  if (eventId && state.events.eventData.length > 0) {
+    event = state.events.eventData.filter(event => event.id === eventId)[0]
+  }
+  
+  return {
+    event
+  }
+
+};
+
+export default connect(mapState)(EventForm);
